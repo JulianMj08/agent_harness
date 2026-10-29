@@ -1,9 +1,16 @@
 from model import preguntar
-from tools import sumar
+from tools import sumar, restar, multiplicar
 
 MODEL = "qwen3:4b"
 
-HERRAMIENTAS = [sumar]
+# Herramientas que el modelo puede solicitar
+HERRAMIENTAS = [sumar, restar, multiplicar]
+
+# Registro que relaciona cada nombre con su función Python
+REGISTRO_HERRAMIENTAS = {
+    funcion.__name__: funcion
+    for funcion in HERRAMIENTAS
+}
 
 #creamos una función que reciba un mensaje y devuelva la respuesta del modelo
 def ejecutar(mensaje): 
@@ -36,17 +43,22 @@ def ejecutar(mensaje):
             nombre = llamada.function.name
             argumentos = llamada.function.arguments
 
-            # Ejecutar la herramienta correspondiente
-            if nombre == "sumar":
-                a = int(argumentos["a"])
-                b = int(argumentos["b"])
 
-                print(f"\n[HERRAMIENTA EJECUTADA] sumar({a}, {b})")
+            # Buscamos la función en el registro
+            funcion = REGISTRO_HERRAMIENTAS.get(nombre)
 
-                resultado = sumar(a, b)
+            if funcion is None:
+                raise ValueError(
+                    f"Herramienta no permitida: {nombre}"
+                )
 
-            else:
-                raise ValueError(f"Herramienta no permitida: {nombre}")
+            print(
+                f"\n[HERRAMIENTA EJECUTADA] "
+                f"{nombre}({argumentos})"
+            )
+
+            # Ejecutamos la función correspondiente
+            resultado = funcion(**argumentos)
 
             # Devolvemos el resultado de la herramienta al modelo
             mensajes.append({
@@ -54,6 +66,9 @@ def ejecutar(mensaje):
                 "tool_name": nombre,
                 "content": str(resultado)
             })
+
+
+            print(f"\n[HERRAMIENTA EJECUTADA]")
 
             # Segunda llamada: el modelo redacta la respuesta final
         respuesta_final = preguntar(mensajes)
