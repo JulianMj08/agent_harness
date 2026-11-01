@@ -12,6 +12,9 @@ REGISTRO_HERRAMIENTAS = {
     for funcion in HERRAMIENTAS
 }
 
+# Límite de iteraciones para evitar bucles infinitos
+MAX_ITERACIONES = 10
+
 #creamos una función que reciba un mensaje y devuelva la respuesta del modelo
 def ejecutar(mensaje): 
 
@@ -30,15 +33,32 @@ def ejecutar(mensaje):
             "content": mensaje
         }
     ]
-    # Primera llamada: el modelo decide qué hacer
-    respuesta = preguntar(mensajes, HERRAMIENTAS) # llamamos a la función preguntar del archivo model.py para obtener la respuesta del modelo
 
-     # Guardamos la respuesta del modelo en el historial
-    mensajes.append(respuesta)
+    # Repetimos el ciclo hasta obtener una respuesta final
+    for iteracion in range(MAX_ITERACIONES):
 
-     # Comprobar si el modelo solicita una herramienta
-    if respuesta.tool_calls:
+        print(f"\n[AGENTE] Iteración {iteracion + 1}")
+        print("[DEBUG] Consultando al modelo...")
 
+        # Primera llamada: el modelo decide qué hacer
+        respuesta = preguntar(mensajes, HERRAMIENTAS) # llamamos a la función preguntar del archivo model.py para obtener la respuesta del modelo
+
+        print("[DEBUG] Modelo respondió.")
+        print("[DEBUG] Contenido:", repr(respuesta.content))
+        print("[DEBUG] Herramientas:", respuesta.tool_calls)
+
+        # Guardamos la respuesta del modelo en el historial
+        mensajes.append(respuesta)
+
+        # Si no solicita herramientas, termina el turno
+        if not respuesta.tool_calls:
+            if respuesta.content:
+                    return respuesta.content
+
+            print("[DEBUG] Respuesta vacía; se intentará otra iteración.")
+            continue
+
+        # Ejecutamos todas las herramientas solicitadas
         for llamada in respuesta.tool_calls:
             nombre = llamada.function.name
             argumentos = llamada.function.arguments
@@ -49,7 +69,7 @@ def ejecutar(mensaje):
 
             if funcion is None:
                 raise ValueError(
-                    f"Herramienta no permitida: {nombre}"
+                        f"Herramienta no permitida: {nombre}"
                 )
 
             print(
@@ -67,13 +87,8 @@ def ejecutar(mensaje):
                 "content": str(resultado)
             })
 
-
-            print(f"\n[HERRAMIENTA EJECUTADA]")
-
-            # Segunda llamada: el modelo redacta la respuesta final
-        respuesta_final = preguntar(mensajes)
-
-        return respuesta_final.content
-
-    # Si no solicita herramientas, devolver su respuesta normal
-    return respuesta.content
+        # El modelo no produjo una respuesta final dentro del límite
+    raise RuntimeError(
+        f"El agente alcanzó el límite de "
+        f"{MAX_ITERACIONES} iteraciones."
+    )
