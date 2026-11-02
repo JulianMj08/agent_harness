@@ -1,3 +1,4 @@
+from pprint import pprint
 from model import preguntar
 from tools import sumar, restar, multiplicar
 
@@ -15,24 +16,28 @@ REGISTRO_HERRAMIENTAS = {
 # Límite de iteraciones para evitar bucles infinitos
 MAX_ITERACIONES = 10
 
-#creamos una función que reciba un mensaje y devuelva la respuesta del modelo
-def ejecutar(mensaje): 
-
-    mensajes = [
-        {
+# Historial persistente durante la ejecución del programa, aca se guardara el historial de la conversación, incluyendo los mensajes del usuario, las respuestas del modelo y los resultados de las herramientas
+MENSAJES = [
+    {
         "role": "system",
         "content": (
             "Eres un asistente útil y conversacional. "
-            "Cuando utilices una herramienta, explica al usuario "
-            "el resultado de forma natural y breve. "
-            "No afirmes haber utilizado herramientas si no las has utilizado."
+            "Puedes utilizar herramientas matemáticas. "
+            "Ten en cuenta el contexto de la conversación anterior."
         )
-    },
-        {
-            "role": "user",
-            "content": mensaje
-        }
-    ]
+    }
+]
+
+#creamos una función que reciba un mensaje y devuelva la respuesta del modelo
+def ejecutar(mensaje): 
+
+    
+    # Añadimos el nuevo mensaje al historial
+    MENSAJES.append({
+        "role": "user",
+        "content": mensaje
+    })    
+    
 
     # Repetimos el ciclo hasta obtener una respuesta final
     for iteracion in range(MAX_ITERACIONES):
@@ -41,22 +46,23 @@ def ejecutar(mensaje):
         print("[DEBUG] Consultando al modelo...")
 
         # Primera llamada: el modelo decide qué hacer
-        respuesta = preguntar(mensajes, HERRAMIENTAS) # llamamos a la función preguntar del archivo model.py para obtener la respuesta del modelo
+        respuesta = preguntar(MENSAJES, HERRAMIENTAS) # llamamos a la función preguntar del archivo model.py para obtener la respuesta del modelo
 
         print("[DEBUG] Modelo respondió.")
         print("[DEBUG] Contenido:", repr(respuesta.content))
         print("[DEBUG] Herramientas:", respuesta.tool_calls)
 
         # Guardamos la respuesta del modelo en el historial
-        mensajes.append(respuesta)
+        MENSAJES.append(respuesta)
 
         # Si no solicita herramientas, termina el turno
         if not respuesta.tool_calls:
             if respuesta.content:
-                    return respuesta.content
+                print("\n--- HISTORIAL ---")
+                pprint(MENSAJES)
+                return respuesta.content
 
-            print("[DEBUG] Respuesta vacía; se intentará otra iteración.")
-            continue
+            raise RuntimeError("El modelo devolvió una respuesta vacía.")
 
         # Ejecutamos todas las herramientas solicitadas
         for llamada in respuesta.tool_calls:
@@ -81,14 +87,16 @@ def ejecutar(mensaje):
             resultado = funcion(**argumentos)
 
             # Devolvemos el resultado de la herramienta al modelo
-            mensajes.append({
+            MENSAJES.append({
                 "role": "tool",
                 "tool_name": nombre,
                 "content": str(resultado)
             })
+
 
         # El modelo no produjo una respuesta final dentro del límite
     raise RuntimeError(
         f"El agente alcanzó el límite de "
         f"{MAX_ITERACIONES} iteraciones."
     )
+
