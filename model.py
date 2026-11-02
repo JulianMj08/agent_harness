@@ -6,5 +6,8 @@ def preguntar(mensaje, herramientas=None): # la función preguntar recibe un men
         messages=mensaje,
         tools=herramientas or [], # si no se pasan herramientas, se pasa una lista vacía
         think=False,
+        options={
+            "temperature": 0
+        }
     )
     return response.message

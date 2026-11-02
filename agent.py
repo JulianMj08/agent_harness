@@ -24,6 +24,10 @@ MENSAJES = [
             "Eres un asistente útil y conversacional. "
             "Puedes utilizar herramientas matemáticas. "
             "Ten en cuenta el contexto de la conversación anterior."
+            "Responde siempre en español. "
+            "No muestres razonamientos internos ni explicaciones "
+            "de tu proceso de pensamiento. "
+            "Responde directamente al usuario."
         )
     }
 ]
