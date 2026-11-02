@@ -1,11 +1,11 @@
 from pprint import pprint
 from model import preguntar
-from tools import sumar, restar, multiplicar
+from tools import sumar, restar, multiplicar, obtener_fecha
 
 MODEL = "qwen3:4b"
 
 # Herramientas que el modelo puede solicitar
-HERRAMIENTAS = [sumar, restar, multiplicar]
+HERRAMIENTAS = [sumar, restar, multiplicar, obtener_fecha]
 
 # Registro que relaciona cada nombre con su función Python
 REGISTRO_HERRAMIENTAS = {
